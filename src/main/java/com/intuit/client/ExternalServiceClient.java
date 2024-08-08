@@ -1,13 +1,34 @@
 package com.intuit.client;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Component;
 
-@FeignClient(name = "externalServiceClient", url = "${external.service.url}")
-public interface ExternalServiceClient {
+@Component
+public class ExternalServiceClient {
 
-    @PostMapping("/api/notify")
-    String sendNotification(@RequestParam("param") String param, @RequestBody String requestBody);
+    private final RestTemplate restTemplate;
+
+    public ExternalServiceClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public String makeHttpCall(String url, HttpMethod method, Object requestBody) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json"); // Set headers as needed
+
+        HttpEntity<Object> requestEntity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+            url,
+            method,
+            requestEntity,
+            String.class
+        );
+
+        return response.getBody();
+    }
 }

@@ -1,18 +1,23 @@
 package com.intuit.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intuit.client.ExternalServiceClient;
 import com.intuit.core.entity.ScheduledJob;
 import com.intuit.core.enums.JobStatus;
 import com.intuit.repository.ScheduledJobRepository;
 import com.intuit.util.TimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.intuit.util.UrlUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SchedulerService {
@@ -40,9 +45,16 @@ public class SchedulerService {
         }
     }
 
-    private void executeJob(ScheduledJob job) {
+    private void executeJob(ScheduledJob job) throws JsonProcessingException {
         try {
-            String response = externalServiceClient.sendNotification("someParam", job.getRequestBody());
+            String url = UrlUtils.constructUrlWithParams(job.getUrl(),job.getRequestParams());
+            HttpMethod method = HttpMethod.valueOf(job.getRequestMethod()); // Convert string to HttpMethod
+            Object requestBody = null;
+            if(!StringUtils.isEmpty(requestBody)){
+                requestBody = new ObjectMapper().readValue(job.getRequestBody(),Object.class);
+            }
+
+            String response = externalServiceClient.makeHttpCall(url, method, requestBody);
         } catch (Exception e) {
             throw e;
         }
